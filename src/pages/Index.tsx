@@ -14,12 +14,14 @@ interface Product {
   id: string;
   name: string;
   marketplace: string;
+  region: 'russia' | 'abroad';
   price: number;
   originalPrice?: number;
   image: string;
   rating: number;
   reviews: number;
   availability: string;
+  currency: string;
 }
 
 const mockProducts: Product[] = [
@@ -27,32 +29,113 @@ const mockProducts: Product[] = [
     id: '1',
     name: 'MacBook Pro 14" M4',
     marketplace: 'Авито',
+    region: 'russia',
     price: 125000,
     originalPrice: 145000,
     image: 'https://v3b.fal.media/files/b/kangaroo/TDC4BHrv3WGDYbs2XQPxk_output.png',
     rating: 4.8,
     reviews: 142,
-    availability: 'В наличии'
+    availability: 'В наличии',
+    currency: '₽'
   },
   {
     id: '2',
     name: 'MacBook Pro 14" M4',
     marketplace: 'Wildberries',
+    region: 'russia',
     price: 135000,
     image: 'https://v3b.fal.media/files/b/kangaroo/TDC4BHrv3WGDYbs2XQPxk_output.png',
     rating: 4.6,
     reviews: 89,
-    availability: 'В наличии'
+    availability: 'В наличии',
+    currency: '₽'
   },
   {
     id: '3',
     name: 'MacBook Pro 14" M4',
     marketplace: 'Ozon',
+    region: 'russia',
     price: 142000,
     image: 'https://v3b.fal.media/files/b/kangaroo/TDC4BHrv3WGDYbs2XQPxk_output.png',
     rating: 4.7,
     reviews: 203,
-    availability: 'Доставка 2-3 дня'
+    availability: 'Доставка 2-3 дня',
+    currency: '₽'
+  },
+  {
+    id: '4',
+    name: 'MacBook Pro 14" M4',
+    marketplace: 'Amazon',
+    region: 'abroad',
+    price: 110000,
+    originalPrice: 125000,
+    image: 'https://v3b.fal.media/files/b/kangaroo/TDC4BHrv3WGDYbs2XQPxk_output.png',
+    rating: 4.9,
+    reviews: 2847,
+    availability: 'Доставка 7-14 дней',
+    currency: '₽'
+  },
+  {
+    id: '5',
+    name: 'MacBook Pro 14" M4',
+    marketplace: 'eBay',
+    region: 'abroad',
+    price: 115000,
+    image: 'https://v3b.fal.media/files/b/kangaroo/TDC4BHrv3WGDYbs2XQPxk_output.png',
+    rating: 4.7,
+    reviews: 531,
+    availability: 'Доставка 10-20 дней',
+    currency: '₽'
+  },
+  {
+    id: '6',
+    name: 'MacBook Pro 14" M4',
+    marketplace: 'AliExpress',
+    region: 'abroad',
+    price: 108000,
+    originalPrice: 130000,
+    image: 'https://v3b.fal.media/files/b/kangaroo/TDC4BHrv3WGDYbs2XQPxk_output.png',
+    rating: 4.5,
+    reviews: 1243,
+    availability: 'Доставка 15-30 дней',
+    currency: '₽'
+  },
+  {
+    id: '7',
+    name: 'MacBook Pro 14" M4',
+    marketplace: 'Computeruniverse',
+    region: 'abroad',
+    price: 118000,
+    image: 'https://v3b.fal.media/files/b/kangaroo/TDC4BHrv3WGDYbs2XQPxk_output.png',
+    rating: 4.8,
+    reviews: 324,
+    availability: 'Доставка 5-10 дней',
+    currency: '₽'
+  },
+  {
+    id: '8',
+    name: 'MacBook Pro 14" M4',
+    marketplace: 'Microless (Dubai)',
+    region: 'abroad',
+    price: 112000,
+    image: 'https://v3b.fal.media/files/b/kangaroo/TDC4BHrv3WGDYbs2XQPxk_output.png',
+    rating: 4.6,
+    reviews: 187,
+    availability: 'Доставка 7-12 дней',
+    currency: '₽'
+  },
+  {
+    id: '9',
+    name: 'MacBook Pro 14" M4',
+    marketplace: 'Taobao',
+    region: 'abroad',
+    price: 105000,
+    originalPrice: 120000,
+    image: 'https://v3b.fal.media/files/b/kangaroo/TDC4BHrv3WGDYbs2XQPxk_output.png',
+    rating: 4.4,
+    reviews: 892,
+    availability: 'Доставка 20-35 дней',
+    currency: '₽'
   }
 ];
 
@@ -68,10 +151,18 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('MacBook Pro 14 M4');
   const [activeTab, setActiveTab] = useState('search');
   const [priceRange, setPriceRange] = useState([100000, 200000]);
-  const [selectedMarketplaces, setSelectedMarketplaces] = useState<string[]>(['Авито', 'Wildberries', 'Ozon']);
+  const [selectedRegion, setSelectedRegion] = useState<'all' | 'russia' | 'abroad'>('all');
+  const [selectedMarketplaces, setSelectedMarketplaces] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
-  const marketplaces = ['Авито', 'Wildberries', 'Ozon'];
+  const russianMarketplaces = ['Авито', 'Wildberries', 'Ozon'];
+  const foreignMarketplaces = ['Amazon', 'eBay', 'AliExpress', 'Computeruniverse', 'Microless (Dubai)', 'Taobao'];
+
+  const availableMarketplaces = selectedRegion === 'russia' 
+    ? russianMarketplaces
+    : selectedRegion === 'abroad'
+    ? foreignMarketplaces
+    : [...russianMarketplaces, ...foreignMarketplaces];
 
   const toggleMarketplace = (marketplace: string) => {
     setSelectedMarketplaces(prev => 
@@ -82,12 +173,14 @@ const Index = () => {
   };
 
   const filteredProducts = useMemo(() => {
-    return mockProducts.filter(product => 
-      product.price >= priceRange[0] &&
-      product.price <= priceRange[1] &&
-      selectedMarketplaces.includes(product.marketplace)
-    );
-  }, [priceRange, selectedMarketplaces]);
+    return mockProducts.filter(product => {
+      const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
+      const matchesRegion = selectedRegion === 'all' || product.region === selectedRegion;
+      const matchesMarketplace = selectedMarketplaces.length === 0 || selectedMarketplaces.includes(product.marketplace);
+      
+      return matchesPrice && matchesRegion && matchesMarketplace;
+    });
+  }, [priceRange, selectedRegion, selectedMarketplaces]);
 
   const lowestPrice = filteredProducts.length > 0 
     ? Math.min(...filteredProducts.map(p => p.price))
@@ -182,7 +275,7 @@ const Index = () => {
 
               {showFilters && (
                 <Card className="p-6 animate-scale-in">
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-6">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <Label className="text-base font-semibold">Диапазон цен</Label>
@@ -201,9 +294,48 @@ const Index = () => {
                     </div>
 
                     <div className="space-y-4">
-                      <Label className="text-base font-semibold">Маркетплейсы</Label>
-                      <div className="space-y-3">
-                        {marketplaces.map(marketplace => (
+                      <Label className="text-base font-semibold">Регион поиска</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Button
+                          variant={selectedRegion === 'all' ? 'default' : 'outline'}
+                          onClick={() => setSelectedRegion('all')}
+                          className="w-full"
+                        >
+                          <Icon name="Globe" className="h-4 w-4 mr-2" />
+                          Все
+                        </Button>
+                        <Button
+                          variant={selectedRegion === 'russia' ? 'default' : 'outline'}
+                          onClick={() => setSelectedRegion('russia')}
+                          className="w-full"
+                        >
+                          <Icon name="MapPin" className="h-4 w-4 mr-2" />
+                          Россия
+                        </Button>
+                        <Button
+                          variant={selectedRegion === 'abroad' ? 'default' : 'outline'}
+                          onClick={() => setSelectedRegion('abroad')}
+                          className="w-full"
+                        >
+                          <Icon name="Plane" className="h-4 w-4 mr-2" />
+                          Зарубеж
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-base font-semibold">Маркетплейсы</Label>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setSelectedMarketplaces([])}
+                        >
+                          Очистить
+                        </Button>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-x-6 gap-y-3 max-h-48 overflow-y-auto">
+                        {availableMarketplaces.map(marketplace => (
                           <div key={marketplace} className="flex items-center space-x-2">
                             <Checkbox
                               id={marketplace}
@@ -227,7 +359,8 @@ const Index = () => {
                       variant="outline" 
                       onClick={() => {
                         setPriceRange([100000, 200000]);
-                        setSelectedMarketplaces(['Авито', 'Wildberries', 'Ozon']);
+                        setSelectedRegion('all');
+                        setSelectedMarketplaces([]);
                       }}
                       className="gap-2"
                     >
@@ -288,7 +421,8 @@ const Index = () => {
                     <p className="text-muted-foreground mb-4">Попробуйте изменить фильтры или поисковый запрос</p>
                     <Button onClick={() => {
                       setPriceRange([100000, 200000]);
-                      setSelectedMarketplaces(['Авито', 'Wildberries', 'Ozon']);
+                      setSelectedRegion('all');
+                      setSelectedMarketplaces([]);
                     }}>
                       Сбросить фильтры
                     </Button>
@@ -322,8 +456,14 @@ const Index = () => {
                         </Button>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline">{product.marketplace}</Badge>
+                        {product.region === 'abroad' && (
+                          <Badge variant="secondary" className="gap-1">
+                            <Icon name="Plane" className="h-3 w-3" />
+                            Зарубеж
+                          </Badge>
+                        )}
                         <div className="flex items-center gap-1 text-sm">
                           <Icon name="Star" className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                           <span className="font-medium">{product.rating}</span>
