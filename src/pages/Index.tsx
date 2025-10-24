@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Icon from '@/components/ui/icon';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Product {
@@ -64,8 +67,31 @@ const priceHistoryData = [
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('MacBook Pro 14 M4');
   const [activeTab, setActiveTab] = useState('search');
+  const [priceRange, setPriceRange] = useState([100000, 200000]);
+  const [selectedMarketplaces, setSelectedMarketplaces] = useState<string[]>(['Авито', 'Wildberries', 'Ozon']);
+  const [showFilters, setShowFilters] = useState(false);
 
-  const lowestPrice = Math.min(...mockProducts.map(p => p.price));
+  const marketplaces = ['Авито', 'Wildberries', 'Ozon'];
+
+  const toggleMarketplace = (marketplace: string) => {
+    setSelectedMarketplaces(prev => 
+      prev.includes(marketplace) 
+        ? prev.filter(m => m !== marketplace)
+        : [...prev, marketplace]
+    );
+  };
+
+  const filteredProducts = useMemo(() => {
+    return mockProducts.filter(product => 
+      product.price >= priceRange[0] &&
+      product.price <= priceRange[1] &&
+      selectedMarketplaces.includes(product.marketplace)
+    );
+  }, [priceRange, selectedMarketplaces]);
+
+  const lowestPrice = filteredProducts.length > 0 
+    ? Math.min(...filteredProducts.map(p => p.price))
+    : 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -127,16 +153,94 @@ const Index = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsContent value="search" className="mt-0 space-y-6">
             <div className="flex flex-col gap-4 animate-fade-in">
-              <div className="relative">
-                <Icon name="Search" className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Найти товар на всех площадках..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-14 pl-12 pr-4 text-lg border-2 focus:border-primary"
-                />
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <Icon name="Search" className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Найти товар на всех площадках..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="h-14 pl-12 pr-4 text-lg border-2 focus:border-primary"
+                  />
+                </div>
+                <Button 
+                  variant={showFilters ? 'default' : 'outline'} 
+                  size="lg" 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="gap-2 h-14 px-6"
+                >
+                  <Icon name="SlidersHorizontal" className="h-5 w-5" />
+                  Фильтры
+                  {filteredProducts.length !== mockProducts.length && (
+                    <Badge variant="secondary" className="ml-1">
+                      {filteredProducts.length}
+                    </Badge>
+                  )}
+                </Button>
               </div>
+
+              {showFilters && (
+                <Card className="p-6 animate-scale-in">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-base font-semibold">Диапазон цен</Label>
+                        <span className="text-sm text-muted-foreground">
+                          {priceRange[0].toLocaleString('ru-RU')} - {priceRange[1].toLocaleString('ru-RU')} ₽
+                        </span>
+                      </div>
+                      <Slider
+                        min={50000}
+                        max={250000}
+                        step={5000}
+                        value={priceRange}
+                        onValueChange={setPriceRange}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label className="text-base font-semibold">Маркетплейсы</Label>
+                      <div className="space-y-3">
+                        {marketplaces.map(marketplace => (
+                          <div key={marketplace} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={marketplace}
+                              checked={selectedMarketplaces.includes(marketplace)}
+                              onCheckedChange={() => toggleMarketplace(marketplace)}
+                            />
+                            <label
+                              htmlFor={marketplace}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {marketplace}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-6 pt-6 border-t">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setPriceRange([100000, 200000]);
+                        setSelectedMarketplaces(['Авито', 'Wildberries', 'Ozon']);
+                      }}
+                      className="gap-2"
+                    >
+                      <Icon name="RotateCcw" className="h-4 w-4" />
+                      Сбросить
+                    </Button>
+                    <div className="flex-1" />
+                    <Badge variant="secondary" className="px-3 py-2">
+                      Найдено: {filteredProducts.length} {filteredProducts.length === 1 ? 'товар' : filteredProducts.length < 5 ? 'товара' : 'товаров'}
+                    </Badge>
+                  </div>
+                </Card>
+              )}
 
               <Card className="p-6 animate-scale-in">
                 <div className="flex items-center gap-3 mb-4">
@@ -177,7 +281,19 @@ const Index = () => {
               </Card>
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {mockProducts.map((product, index) => (
+                {filteredProducts.length === 0 ? (
+                  <Card className="col-span-full p-12 text-center">
+                    <Icon name="Search" className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-2xl font-bold mb-2">Ничего не найдено</h3>
+                    <p className="text-muted-foreground mb-4">Попробуйте изменить фильтры или поисковый запрос</p>
+                    <Button onClick={() => {
+                      setPriceRange([100000, 200000]);
+                      setSelectedMarketplaces(['Авито', 'Wildberries', 'Ozon']);
+                    }}>
+                      Сбросить фильтры
+                    </Button>
+                  </Card>
+                ) : filteredProducts.map((product, index) => (
                   <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
                     <div className="relative">
                       <img 
