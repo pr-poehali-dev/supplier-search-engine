@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -154,6 +154,9 @@ const Index = () => {
   const [selectedRegion, setSelectedRegion] = useState<'all' | 'russia' | 'abroad'>('all');
   const [selectedMarketplaces, setSelectedMarketplaces] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [products, setProducts] = useState<Product[]>(mockProducts);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const russianMarketplaces = ['Авито', 'Wildberries', 'Ozon'];
   const foreignMarketplaces = ['Amazon', 'eBay', 'AliExpress', 'Computeruniverse', 'Microless (Dubai)', 'Taobao'];
@@ -172,15 +175,50 @@ const Index = () => {
     );
   };
 
+  const searchProducts = async () => {
+    if (!searchQuery || searchQuery.length < 2) {
+      setSearchError('Введите минимум 2 символа');
+      return;
+    }
+
+    setIsLoading(true);
+    setSearchError(null);
+
+    try {
+      const response = await fetch(
+        `https://functions.poehali.dev/78e733e0-d248-4e44-90f2-76014ceb26e1?query=${encodeURIComponent(searchQuery)}&region=${selectedRegion}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Ошибка поиска');
+      }
+
+      const data = await response.json();
+      setProducts(data.products || []);
+    } catch (error) {
+      setSearchError('Не удалось выполнить поиск. Попробуйте позже.');
+      console.error('Search error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      searchProducts();
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, selectedRegion]);
+
   const filteredProducts = useMemo(() => {
-    return mockProducts.filter(product => {
+    return products.filter(product => {
       const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
-      const matchesRegion = selectedRegion === 'all' || product.region === selectedRegion;
       const matchesMarketplace = selectedMarketplaces.length === 0 || selectedMarketplaces.includes(product.marketplace);
       
-      return matchesPrice && matchesRegion && matchesMarketplace;
+      return matchesPrice && matchesMarketplace;
     });
-  }, [priceRange, selectedRegion, selectedMarketplaces]);
+  }, [products, priceRange, selectedMarketplaces]);
 
   const lowestPrice = filteredProducts.length > 0 
     ? Math.min(...filteredProducts.map(p => p.price))
@@ -255,7 +293,13 @@ const Index = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="h-14 pl-12 pr-4 text-lg border-2 focus:border-primary"
+                    disabled={isLoading}
                   />
+                  {isLoading && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <Icon name="Loader2" className="h-5 w-5 animate-spin text-primary" />
+                    </div>
+                  )}
                 </div>
                 <Button 
                   variant={showFilters ? 'default' : 'outline'} 
@@ -272,6 +316,15 @@ const Index = () => {
                   )}
                 </Button>
               </div>
+
+              {searchError && (
+                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <div className="flex items-center gap-2 text-destructive">
+                    <Icon name="AlertCircle" className="h-5 w-5" />
+                    <p className="text-sm font-medium">{searchError}</p>
+                  </div>
+                </div>
+              )}
 
               {showFilters && (
                 <Card className="p-6 animate-scale-in">

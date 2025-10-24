@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "Search for MacBook",
+      "method": "GET",
+      "path": "/?query=macbook&region=all",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Search with short query",
+      "method": "GET",
+      "path": "/?query=m",
+      "expectedStatus": 400
+    },
+    {
+      "name": "Search only in Russia",
+      "method": "GET",
+      "path": "/?query=iphone&region=russia",
+      "expectedStatus": 200
+    }
+  ]
+}
